@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (override system variables for local consistency)
+load_dotenv(override=True)
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'super-secret-hrms-key'
