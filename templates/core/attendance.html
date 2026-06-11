@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance - Veesri Payroll System{% endblock %}
+{% block nav_attendance %}active{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <h1 class="page-title">Attendance Management</h1>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+        
+        <!-- Check In / Check Out Kiosk -->
+        <div class="glass-card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">Daily Logging Panel</h3>
+            
+            {% if employee %}
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">Today's Date</div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--secondary); margin-bottom: 24px;" id="live-date">...</div>
+                    
+                    {% if today_att %}
+                        <div style="margin-bottom: 20px;">
+                            <span class="badge {% if today_att.status == 'Present' %}badge-success{% elif today_att.status == 'Late' %}badge-warning{% else %}badge-danger{% endif %}" style="font-size: 16px; padding: 8px 16px;">
+                                Status: {{ today_att.status }}
+                            </span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; text-align: left; background: rgba(15,23,42,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+                            <div>
+                                <span style="font-size: 12px; color: var(--text-secondary); display: block;">Check In</span>
+                                <strong style="font-size: 15px;">{{ today_att.check_in|date:"H:i:s" }}</strong>
+                            </div>
+                            <div>
+                                <span style="font-size: 12px; color: var(--text-secondary); display: block;">Check Out</span>
+                                <strong style="font-size: 15px;">{{ today_att.check_out|date:"H:i:s"|default:"Active Session" }}</strong>
+                            </div>
+                        </div>
+                        
+                        {% if not today_att.check_out %}
+                            <button id="checkout-btn" class="btn-primary" style="background: linear-gradient(135deg, var(--danger), #ef4444); width: 200px;">Check Out</button>
+                        {% else %}
+                            <p style="color: var(--success); font-weight: 500;">Logging session completed for today.</p>
+                        {% endif %}
+                    {% else %}
+                        <div style="margin-bottom: 24px; color: var(--text-secondary);">No check-in record found for today.</div>
+                        <button id="checkin-btn" class="btn-primary" style="background: linear-gradient(135deg, var(--success), #10b981); width: 200px; margin-right: 12px;">Check In</button>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p style="color: var(--text-secondary);">Admin/SuperUser accounts do not log attendance. Use the tables below to monitor logs.</p>
+            {% endif %}
+        </div>
+
+        <!-- Correction Request form -->
+        <div class="glass-card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">Request Correction</h3>
+            
+            {% if employee %}
+                <form id="correction-form">
+                    {% csrf_token %}
+                    <div style="margin-bottom: 14px;">
+                        <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Select Date to Correct</label>
+                        <select name="attendance" id="corr-att-select" required class="form-input" style="height: 48px;">
+                            <option value="">-- Choose log --</option>
+                            {% for log in att_logs %}
+                                {% if log.employee == employee %}
+                                    <option value="{{ log.id }}">{{ log.date }} (In: {{ log.check_in|date:"H:i" }}, Out: {{ log.check_out|date:"H:i"|default:"-" }})</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;">
+                        <div>
+                            <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Correct Check In</label>
+                            <input type="datetime-local" id="corr-checkin" required class="form-input">
+                        </div>
+                        <div>
+                            <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Correct Check Out</label>
+                            <input type="datetime-local" id="corr-checkout" required class="form-input">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Reason for Correction</label>
+                        <textarea id="corr-reason" required class="form-input" style="height: 80px; resize: none;"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" style="width: 100%;">Submit Request</button>
+                </form>
+            {% else %}
+                <p style="color: var(--text-secondary);">Correction requests are submitted by employees.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Subordinate Correction Approvals (Managers & HR) -->
+    {% if pending_corrections %}
+    <div class="glass-card animate-fade-in" style="margin-bottom: 32px; border-left: 5px solid var(--primary);">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">Pending Correction Approvals</h3>
+        <div class="table-container">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Log Date</th>
+                        <th>Current Log</th>
+                        <th>Requested Times</th>
+                        <th>Reason</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for corr in pending_corrections %}
+                    <tr id="corr-row-{{ corr.id }}">
+                        <td style="font-weight: 600;">{{ corr.attendance.employee.user.get_full_name }}</td>
+                        <td>{{ corr.attendance.date }}</td>
+                        <td>In: {{ corr.attendance.check_in|date:"H:i" }}<br/>Out: {{ corr.attendance.check_out|date:"H:i"|default:"-" }}</td>
+                        <td style="color: var(--primary); font-weight: 500;">
+                            In: {{ corr.requested_check_in|date:"m/d H:i" }}<br/>
+                            Out: {{ corr.requested_check_out|date:"m/d H:i" }}
+                        </td>
+                        <td>{{ corr.reason }}</td>
+                        <td>
+                            <button onclick="reviewCorrection('{{ corr.id }}', 'Approve')" class="btn-primary" style="background: var(--success); padding: 6px 12px; font-size: 12px; margin-right: 8px;">Approve</button>
+                            <button onclick="reviewCorrection('{{ corr.id }}', 'Reject')" class="btn-primary" style="background: var(--danger); padding: 6px 12px; font-size: 12px;">Reject</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Attendance Log Table -->
+    <div class="glass-card">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">Recent Logs</h3>
+        <div class="table-container">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Date</th>
+                        <th>Check In</th>
+                        <th>Check Out</th>
+                        <th>Working Hours</th>
+                        <th>QR Verified</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in att_logs %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ log.employee.user.get_full_name }}</td>
+                        <td>{{ log.date }}</td>
+                        <td>{{ log.check_in|date:"H:i:s" }}</td>
+                        <td>{{ log.check_out|date:"H:i:s"|default:"-" }}</td>
+                        <td>{{ log.total_hours }} hrs</td>
+                        <td>
+                            {% if log.qr_verified %}
+                                <span class="badge badge-success">Yes</span>
+                            {% else %}
+                                <span class="badge badge-primary">Manual</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if log.status == 'Present' %}badge-success{% elif log.status == 'Late' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ log.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 20px;">No attendance logs found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const liveDate = document.getElementById("live-date");
+        if(liveDate) {
+            liveDate.innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        const checkinBtn = document.getElementById("checkin-btn");
+        const checkoutBtn = document.getElementById("checkout-btn");
+
+        if(checkinBtn) {
+            checkinBtn.addEventListener("click", function() {
+                // Call DRF check-in endpoint
+                fetch('/attendance/api/logs/check-in/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(res => {
+                    if(res.ok) {
+                        window.location.reload();
+                    } else {
+                        res.json().then(data => alert("Check-in failed: " + (data.detail || "Error")));
+                    }
+                });
+            });
+        }
+
+        if(checkoutBtn) {
+            checkoutBtn.addEventListener("click", function() {
+                fetch('/attendance/api/logs/check-out/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(res => {
+                    if(res.ok) {
+                        window.location.reload();
+                    } else {
+                        res.json().then(data => alert("Check-out failed: " + (data.detail || "Error")));
+                    }
+                });
+            });
+        }
+
+        const corrForm = document.getElementById("correction-form");
+        if(corrForm) {
+            corrForm.addEventListener("submit", function(e) {
+                e.preventDefault();
+                const attId = document.getElementById("corr-att-select").value;
+                const checkInVal = document.getElementById("corr-checkin").value;
+                const checkOutVal = document.getElementById("corr-checkout").value;
+                const reasonVal = document.getElementById("corr-reason").value;
+
+                if(!attId) return;
+
+                fetch('/attendance/api/corrections/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        attendance: attId,
+                        requested_check_in: new Date(checkInVal).toISOString(),
+                        requested_check_out: new Date(checkOutVal).toISOString(),
+                        reason: reasonVal
+                    })
+                })
+                .then(res => {
+                    if(res.ok) {
+                        alert("Correction request submitted successfully.");
+                        window.location.reload();
+                    } else {
+                        res.json().then(data => alert("Failed to submit request: " + (data.detail || "Error")));
+                    }
+                });
+            });
+        }
+    });
+
+    function reviewCorrection(corrId, actionVal) {
+        fetch('/attendance/api/corrections/' + corrId + '/review/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                action: actionVal
+            })
+        })
+        .then(res => {
+            if(res.ok) {
+                alert("Request " + actionVal + "ed.");
+                const row = document.getElementById("corr-row-" + corrId);
+                if(row) row.remove();
+                window.location.reload();
+            } else {
+                res.json().then(data => alert("Review failed: " + (data.detail || "Error")));
+            }
+        });
+    }
+</script>
+{% endblock %}

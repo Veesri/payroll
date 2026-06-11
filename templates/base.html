@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Veesri Payroll System{% endblock %}</title>
+    <!-- Fonts and CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Chart.js for analytics charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar">
+        <div class="sidebar-brand">
+            Veesri Payroll
+        </div>
+        <ul class="sidebar-menu">
+            <li class="sidebar-item">
+                <a href="{% url 'dashboard' %}" class="sidebar-link {% block nav_dashboard %}{% endblock %}">
+                    <!-- Home Icon -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            {% if request.user.role in 'SuperAdmin HRAdmin' %}
+            <li class="sidebar-item">
+                <a href="{% url 'employees_list' %}" class="sidebar-link {% block nav_employees %}{% endblock %}">
+                    <!-- Users Icon -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <span>Employees</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="sidebar-item">
+                <a href="{% url 'attendance_dashboard' %}" class="sidebar-link {% block nav_attendance %}{% endblock %}">
+                    <!-- Clock Icon -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Attendance</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'leaves_list' %}" class="sidebar-link {% block nav_leaves %}{% endblock %}">
+                    <!-- Calendar Icon -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span>Leaves</span>
+                </a>
+            </li>
+
+            {% if request.user.role in 'SuperAdmin HRAdmin PayrollOfficer' %}
+            <li class="sidebar-item">
+                <a href="{% url 'payroll_process' %}" class="sidebar-link {% block nav_payroll %}{% endblock %}">
+                    <!-- Calculator / Dollar Icon -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <span>Payroll</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="sidebar-item">
+                <a href="{% url 'payslips_list' %}" class="sidebar-link {% block nav_payslips %}{% endblock %}">
+                    <!-- Document Icon -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Payslips</span>
+                </a>
+            </li>
+
+            {% if request.user.role in 'SuperAdmin HRAdmin' %}
+            <li class="sidebar-item">
+                <a href="{% url 'audit_logs' %}" class="sidebar-link {% block nav_audit %}{% endblock %}">
+                    <!-- Shield/Lock Icon -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    <span>Audit Logs</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <div class="sidebar-footer">
+            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">
+                Role: <strong>{{ request.user.role }}</strong>
+            </div>
+            <a href="{% url 'logout' %}" class="sidebar-link" style="color: #ef4444; padding: 8px 12px;">
+                <!-- Logout Icon -->
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="content">
+        <!-- Messages Notifications Banner -->
+        {% if messages %}
+            <div style="margin-bottom: 24px;">
+                {% for message in messages %}
+                    <div class="glass-card animate-fade-in" style="margin-bottom: 12px; padding: 14px 20px; border-left: 5px solid {% if message.tags == 'error' %}var(--danger){% elif message.tags == 'success' %}var(--success){% else %}var(--primary){% endif %};">
+                        <span style="font-weight: 500; color: var(--text-primary);">{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

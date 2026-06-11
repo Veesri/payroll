@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Veesri Payroll System{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <h1 class="page-title">Enterprise Dashboard</h1>
+
+    <!-- Stats Grid -->
+    <div class="stat-grid">
+        <div class="glass-card stat-card">
+            <span class="stat-title">Total Employees</span>
+            <span class="stat-value">{{ total_employees }}</span>
+            <span style="font-size: 12px; color: var(--success); margin-top: 8px; font-weight: 500;">Active in System</span>
+        </div>
+        
+        <div class="glass-card stat-card">
+            <span class="stat-title">Latest Payroll Cost</span>
+            <span class="stat-value">${{ total_payroll_costs|floatformat:2 }}</span>
+            <span style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; font-weight: 500;">Period: {{ latest_period_name }}</span>
+        </div>
+        
+        <div class="glass-card stat-card">
+            <span class="stat-title">Pending Leave Requests</span>
+            <span class="stat-value">{{ pending_leaves }}</span>
+            <span style="font-size: 12px; color: var(--warning); margin-top: 8px; font-weight: 500;">Needs Approval</span>
+        </div>
+        
+        <div class="glass-card stat-card">
+            <span class="stat-title">Present Today</span>
+            <span class="stat-value">{{ present_today }}</span>
+            <span style="font-size: 12px; color: var(--success); margin-top: 8px; font-weight: 500;">Check-in Logs</span>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; margin-top: 32px;">
+        <div class="glass-card" style="min-height: 380px;">
+            <h3 style="font-size: 18px; margin-bottom: 20px; font-weight: 600; color: var(--secondary);">Monthly Payroll Trends</h3>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="payrollCostChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="glass-card" style="min-height: 380px;">
+            <h3 style="font-size: 18px; margin-bottom: 20px; font-weight: 600; color: var(--secondary);">Employees by Department</h3>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="deptDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Line Chart for payroll costs
+        const ctx1 = document.getElementById('payrollCostChart').getContext('2d');
+        const payrollChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [{
+                    label: 'Total Net Salary ($)',
+                    data: {{ chart_data|safe }},
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#4f46e5',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Doughnut Chart for departments
+        const ctx2 = document.getElementById('deptDistributionChart').getContext('2d');
+        const deptChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: {{ dept_labels|safe }},
+                datasets: [{
+                    data: {{ dept_counts|safe }},
+                    backgroundColor: [
+                        '#4f46e5', '#10b981', '#f59e0b', '#ef4444', 
+                        '#8b5cf6', '#ec4899', '#06b6d4', '#3b82f6'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 15 }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    });
+</script>
+{% endblock %}

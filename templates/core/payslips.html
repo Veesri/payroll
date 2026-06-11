@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Payslips - Veesri Payroll System{% endblock %}
+{% block nav_payslips %}active{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <h1 class="page-title">Payslip Documents</h1>
+
+    <!-- Payslips list -->
+    <div class="glass-card">
+        <div class="table-container">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Employee</th>
+                        <th>Period</th>
+                        <th>Net Salary</th>
+                        <th>Email Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ps in payslips %}
+                    <tr>
+                        <td style="font-weight: 600; color: var(--primary);">{{ ps.payslip_code }}</td>
+                        <td>{{ ps.payroll.employee.user.get_full_name }}</td>
+                        <td>{{ ps.payroll.period.name }}</td>
+                        <td style="font-weight: 500;">${{ ps.payroll.net_salary|floatformat:2 }}</td>
+                        <td>
+                            {% if ps.is_email_sent %}
+                                <span class="badge badge-success">Sent ({{ ps.sent_at|date:"m/d H:i" }})</span>
+                            {% else %}
+                                <span class="badge badge-warning">Not Sent</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/payslips/api/records/{{ ps.id }}/download/" class="btn-primary" style="background: var(--primary); padding: 6px 12px; font-size: 12px; margin-right: 8px;">Download PDF</a>
+                            
+                            {% if request.user.role in 'SuperAdmin HRAdmin PayrollOfficer' %}
+                                <button onclick="sendPayslipEmail('{{ ps.id }}')" class="btn-primary" style="background: var(--success); padding: 6px 12px; font-size: 12px;">Email Subordinate</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 25px;">No payslips have been generated yet. (Ensure payroll cycles are processed and locked).</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function sendPayslipEmail(payslipId) {
+        fetch('/payslips/api/records/' + payslipId + '/send-email/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({})
+        })
+        .then(res => {
+            if(res.ok) {
+                alert("Payslip dispatched to employee email address.");
+                window.location.reload();
+            } else {
+                res.json().then(data => alert("Failed to send email: " + (data.detail || "Error")));
+            }
+        });
+    }
+</script>
+{% endblock %}

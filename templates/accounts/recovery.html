@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recover Password - Staff Payroll Management System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body style="display: block; overflow: hidden;">
+
+    <div class="login-container">
+        <!-- Floating blobs -->
+        <div style="position: absolute; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(79,70,229,0.3) 0%, rgba(79,70,229,0) 70%); top: -100px; left: -100px; pointer-events: none;"></div>
+        <div style="position: absolute; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, rgba(99,102,241,0) 70%); bottom: -150px; right: -150px; pointer-events: none;"></div>
+        
+        <div class="login-card animate-fade-in">
+            <div class="login-title">Reset Password</div>
+            <div class="login-subtitle">Enter credentials to recover your account</div>
+
+            {% if messages %}
+                <div style="margin-bottom: 20px;">
+                    {% for message in messages %}
+                        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #fca5a5; margin-bottom: 8px;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                
+                <div style="margin-bottom: 16px;">
+                    <label for="id_username">Username</label>
+                    {{ form.username }}
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label for="id_email">Email Address</label>
+                    {{ form.email }}
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label for="id_new_password">New Password</label>
+                    {{ form.new_password }}
+                </div>
+                
+                <button type="submit" class="btn-primary">Reset Password</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: 24px;">
+                <a href="{% url 'login' %}" style="color: #a5b4fc; text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='#c7d2fe'" onmouseout="this.style.color='#a5b4fc'">Back to Login</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

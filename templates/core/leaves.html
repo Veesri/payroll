@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Leaves - Veesri Payroll System{% endblock %}
+{% block nav_leaves %}active{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <h1 class="page-title">Leaves & Off-Time</h1>
+
+    <!-- Leaves Balance Cards (Only for Employees) -->
+    {% if balances %}
+    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Your Leave Balances</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 32px;">
+        {% for bal in balances %}
+        <div class="glass-card" style="padding: 18px 24px;">
+            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">{{ bal.leave_type.name }}</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--secondary);">
+                {{ bal.remaining_days }} <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">/ {{ bal.allocated_days }} days left</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; align-items: start;">
+        
+        <!-- Leave Requests Log Table -->
+        <div class="glass-card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">Leave Log Requests</h3>
+            <div class="table-container">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Dates</th>
+                            <th>Days</th>
+                            <th>Manager Appr.</th>
+                            <th>HR Appr.</th>
+                            <th>Status</th>
+                            {% if request.user.role in 'SuperAdmin HRAdmin DeptManager' %}
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for leave in leaves %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ leave.employee.user.get_full_name }}</td>
+                            <td>{{ leave.leave_type.name }}</td>
+                            <td>{{ leave.start_date }} to {{ leave.end_date }}</td>
+                            <td>{{ leave.duration_days }} days</td>
+                            <td>
+                                {% if leave.manager_approved_by %}
+                                    <span style="color: var(--success); font-size: 13px;">&#10004; {{ leave.manager_approved_by.first_name }}</span>
+                                {% else %}
+                                    <span style="color: var(--text-secondary); font-size: 13px;">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if leave.hr_approved_by %}
+                                    <span style="color: var(--success); font-size: 13px;">&#10004; {{ leave.hr_approved_by.first_name }}</span>
+                                {% else %}
+                                    <span style="color: var(--text-secondary); font-size: 13px;">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if leave.status == 'Approved' %}badge-success{% elif leave.status == 'Pending' %}badge-warning{% else %}badge-danger{% endif %}">
+                                    {{ leave.status }}
+                                </span>
+                            </td>
+                            
+                            {% if request.user.role in 'SuperAdmin HRAdmin DeptManager' %}
+                            <td>
+                                {% if leave.status == 'Pending' %}
+                                    <!-- Manager approval action (available to DeptManager and Admins) -->
+                                    {% if request.user.role == 'DeptManager' or request.user.role in 'SuperAdmin HRAdmin' %}
+                                        {% if not leave.manager_approved_by %}
+                                            <button onclick="approveLeave('{{ leave.id }}', 'approve-manager')" class="btn-primary" style="background: var(--primary); padding: 5px 10px; font-size: 11px; margin-bottom: 4px;">Appr. Mgr</button>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    <!-- HR approval action (available only to HRAdmin and SuperAdmin) -->
+                                    {% if request.user.role in 'SuperAdmin HRAdmin' %}
+                                        <button onclick="approveLeave('{{ leave.id }}', 'approve-hr')" class="btn-primary" style="background: var(--success); padding: 5px 10px; font-size: 11px; margin-bottom: 4px;">Appr. HR</button>
+                                    {% endif %}
+                                    
+                                    <button onclick="approveLeave('{{ leave.id }}', 'reject')" class="btn-primary" style="background: var(--danger); padding: 5px 10px; font-size: 11px;">Reject</button>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 20px;">No leave requests found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Apply for Leave Card -->
+        {% if employee %}
+        <div class="glass-card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">Apply for Leave</h3>
+            <form method="post">
+                {% csrf_token %}
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Leave Type</label>
+                    <select name="leave_type" required class="form-input" style="height: 48px;">
+                        {% for lt in leave_types %}
+                            <option value="{{ lt.id }}">{{ lt.name }} (Paid: {% if lt.is_paid %}Yes{% else %}No{% endif %})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Start Date</label>
+                    <input type="date" name="start_date" required class="form-input">
+                </div>
+                
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">End Date</label>
+                    <input type="date" name="end_date" required class="form-input">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Reason</label>
+                    <textarea name="reason" required class="form-input" style="height: 80px; resize: none;"></textarea>
+                </div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%;">Submit Application</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function approveLeave(leaveId, actionType) {
+        fetch('/leaves/api/requests/' + leaveId + '/' + actionType + '/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({})
+        })
+        .then(res => {
+            if(res.ok) {
+                alert("Leave status updated successfully.");
+                window.location.reload();
+            } else {
+                res.json().then(data => alert("Failed to update status: " + (data.detail || "Error")));
+            }
+        });
+    }
+</script>
+{% endblock %}

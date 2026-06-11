@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Processing - Veesri Payroll System{% endblock %}
+{% block nav_payroll %}active{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <h1 class="page-title">Payroll Processing Panel</h1>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; align-items: start; margin-bottom: 32px;">
+        
+        <!-- Payroll Periods Table -->
+        <div class="glass-card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">Payroll Cycles / Periods</h3>
+            <div class="table-container">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>Period Name</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Locked Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for period in periods %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ period.name }}</td>
+                            <td>{{ period.start_date }}</td>
+                            <td>{{ period.end_date }}</td>
+                            <td>
+                                {% if period.is_locked %}
+                                    <span class="badge badge-danger">Locked</span>
+                                {% else %}
+                                    <span class="badge badge-success">Open</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not period.is_locked %}
+                                    <button onclick="processPayroll('{{ period.id }}')" class="btn-primary" style="background: var(--primary); padding: 6px 12px; font-size: 12px; margin-right: 4px;">Calculate / Process</button>
+                                    <button onclick="lockPeriod('{{ period.id }}')" class="btn-primary" style="background: var(--secondary); padding: 6px 12px; font-size: 12px; margin-right: 4px;">Lock Cycle</button>
+                                {% endif %}
+                                <a href="/payroll/api/periods/{{ period.id }}/salary-register/" class="btn-primary" style="background: var(--success); padding: 6px 12px; font-size: 12px;">Export Excel</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">No payroll periods registered.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right Side Panel: Create Period & Add Holidays -->
+        <div>
+            <!-- Create Period -->
+            <div class="glass-card" style="margin-bottom: 32px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--secondary);">Create Payroll Cycle</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="create_period" value="1">
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">Period Name</label>
+                        <input type="text" name="name" required placeholder="e.g. June 2026" class="form-input">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">Start Date</label>
+                        <input type="date" name="start_date" required class="form-input">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">End Date</label>
+                        <input type="date" name="end_date" required class="form-input">
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">Create Period</button>
+                </form>
+            </div>
+
+            <!-- Add Holiday -->
+            <div class="glass-card">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--secondary);">Add Official Holiday</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="add_holiday" value="1">
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">Holiday Name</label>
+                        <input type="text" name="name" required placeholder="e.g. Christmas Day" class="form-input">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">Date</label>
+                        <input type="date" name="date" required class="form-input">
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">Add Holiday</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Official Holidays List -->
+    <div class="glass-card">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">System Registered Holidays</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            {% for holiday in holidays %}
+                <div style="background: rgba(15,23,42,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 14px;">
+                    <strong>{{ holiday.name }}</strong>: <span style="color: var(--text-secondary);">{{ holiday.date }}</span>
+                </div>
+            {% empty %}
+                <div style="color: var(--text-secondary); font-size: 14px;">No official holidays registered.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function processPayroll(periodId) {
+        if(!confirm("Are you sure you want to process payroll calculations for all active employees?")) return;
+        
+        fetch('/payroll/api/periods/' + periodId + '/process/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({})
+        })
+        .then(res => {
+            if(res.ok) {
+                res.json().then(data => alert(data.detail));
+                window.location.reload();
+            } else {
+                res.json().then(data => alert("Calculation failed: " + (data.detail || "Error")));
+            }
+        });
+    }
+
+    function lockPeriod(periodId) {
+        if(!confirm("Warning: Locking the payroll cycle will seal calculations and generate final payslips. This action is irreversible. Proceed?")) return;
+        
+        fetch('/payroll/api/periods/' + periodId + '/lock/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({})
+        })
+        .then(res => {
+            if(res.ok) {
+                res.json().then(data => alert(data.detail));
+                window.location.reload();
+            } else {
+                res.json().then(data => alert("Lock failed: " + (data.detail || "Error")));
+            }
+        });
+    }
+</script>
+{% endblock %}

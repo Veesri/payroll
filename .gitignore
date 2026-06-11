@@ -1,0 +1,19 @@
+# Python virtual environment
+backend/venv/
+backend/.env
+__pycache__/
+*.pyc
+
+# Node dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Databases
+*.db
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db

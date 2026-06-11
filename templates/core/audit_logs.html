@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Veesri Payroll System{% endblock %}
+{% block nav_audit %}active{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <h1 class="page-title">Security & Audit Logs</h1>
+
+    <!-- Audit logs table -->
+    <div class="glass-card">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--secondary);">System Operations Log</h3>
+        <div class="table-container">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>IP Address</th>
+                        <th>Action</th>
+                        <th>Model</th>
+                        <th>Object ID</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                        <td style="font-weight: 600;">{{ log.user.username|default:"System" }}</td>
+                        <td><code>{{ log.ip_address|default:"-" }}</code></td>
+                        <td>
+                            <span class="badge {% if log.action == 'CREATE' %}badge-success{% elif log.action == 'UPDATE' %}badge-primary{% else %}badge-danger{% endif %}">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td>{{ log.model_name }}</td>
+                        <td><code>{{ log.object_id }}</code></td>
+                        <td>
+                            <button onclick="toggleDetails('details-{{ log.id }}')" class="btn-primary" style="padding: 4px 8px; font-size: 11px;">View Changes</button>
+                        </td>
+                    </tr>
+                    <!-- Hidden row for details -->
+                    <tr id="details-{{ log.id }}" style="display: none; background-color: rgba(15,23,42,0.02);">
+                        <td colspan="7" style="padding: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <strong style="display: block; font-size: 12px; margin-bottom: 8px; color: var(--text-secondary);">OLD VALUE:</strong>
+                                    <pre style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 11px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;">{{ log.old_value|default:"None" }}</pre>
+                                </div>
+                                <div>
+                                    <strong style="display: block; font-size: 12px; margin-bottom: 8px; color: var(--text-secondary);">NEW VALUE:</strong>
+                                    <pre style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 11px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;">{{ log.new_value|default:"None" }}</pre>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 20px;">No audit logs registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    def toggleDetails(id) {
+        // Javascript helper
+    }
+</script>
+<script>
+    function toggleDetails(rowId) {
+        const row = document.getElementById(rowId);
+        if(row.style.display === 'none') {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}
