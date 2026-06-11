@@ -6,8 +6,8 @@ app = create_app()
 
 def seed():
     with app.app_context():
-        # db.drop_all()
-        # db.create_all()
+        # Ensure all tables are created in the database
+        db.create_all()
 
         if User.query.filter_by(username='superadmin').first():
             print("Database already seeded.")
