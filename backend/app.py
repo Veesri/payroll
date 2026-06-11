@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -18,14 +19,15 @@ def create_app(config_class=Config):
     Migrate(app, db)
     jwt = JWTManager(app)
 
-    # Mail Configuration (Dummy Mailer for dev)
-    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = 'dummy@example.com' # Placeholder
-    app.config['MAIL_PASSWORD'] = 'dummy_password'    # Placeholder
-    app.config['MAIL_DEFAULT_SENDER'] = 'dummy@example.com'
-    app.config['MAIL_SUPPRESS_SEND'] = True # Do not actually send emails during dev
+    # Mail Configuration (Supports environment variables or falls back to dummy)
+    app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
+    app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'dummy@example.com')
+    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'dummy_password')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'dummy@example.com')
+    app.config['MAIL_SUPPRESS_SEND'] = os.environ.get('MAIL_SUPPRESS_SEND', 'True').lower() in ['true', 'on', '1']
+
     
     from flask_mail import Mail
     mail = Mail(app)
