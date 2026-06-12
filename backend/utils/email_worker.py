@@ -9,14 +9,13 @@ import os
 from datetime import datetime
 
 def send_email_job(app):
-    with app.app_context():
-        from models import db, EmailQueue, EmailLog, EmailSettings
-        
-        # Give db time to initialize on fresh start
-        time.sleep(5)
-        
-        while True:
-            try:
+    # Give db time to initialize on fresh start
+    time.sleep(5)
+    
+    while True:
+        try:
+            with app.app_context():
+                from models import db, EmailQueue, EmailLog, EmailSettings
                 # Check for pending emails
                 pending_emails = EmailQueue.query.filter_by(status='pending').all()
                 if pending_emails:
@@ -140,9 +139,11 @@ def send_email_job(app):
                                 pass
             except Exception as e:
                 print(f"Email Worker Loop Error: {e}")
+        except Exception as e:
+            print(f"Worker Context Error: {e}")
             
-            # Poll every 10 seconds
-            time.sleep(10)
+        # Poll every 10 seconds
+        time.sleep(10)
 
 def start_email_worker(app):
     worker_thread = threading.Thread(target=send_email_job, args=(app,), daemon=True)
