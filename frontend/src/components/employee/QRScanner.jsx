@@ -57,7 +57,12 @@ const QRScanner = () => {
       }, {
         headers: { Authorization: `Bearer ${jwtToken}` }
       });
-      setScanResult({ type: 'success', message: res.data.message });
+      setScanResult({ 
+        type: 'success', 
+        message: res.data.message,
+        time: res.data.time,
+        workingHours: res.data.working_hours
+      });
       setError('');
     } catch (err) {
       setScanResult(null);
@@ -75,7 +80,13 @@ const QRScanner = () => {
           <div className="card shadow-sm">
             <div className="card-body">
               {error && <div className="alert alert-danger">{error}</div>}
-              {scanResult && <div className="alert alert-success">{scanResult.message}</div>}
+              {scanResult && (
+                <div className="alert alert-success">
+                  <h5 className="alert-heading mb-1">{scanResult.message}</h5>
+                  {scanResult.time && <p className="mb-0"><strong>Recorded Time:</strong> {scanResult.time}</p>}
+                  {scanResult.workingHours && <p className="mb-0"><strong>Total Hours Today:</strong> {scanResult.workingHours} hours</p>}
+                </div>
+              )}
               
               {!location && !error && (
                 <div className="alert alert-warning">Requesting GPS Location...</div>

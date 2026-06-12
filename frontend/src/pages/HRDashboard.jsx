@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { FaUsers, FaClipboardList } from 'react-icons/fa';
+import { FaUsers, FaClipboardList, FaQrcode, FaEnvelope } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 
 const HRDashboard = () => {
     const { user } = useContext(AuthContext);
     const [stats, setStats] = useState({ totalEmployees: 0, activeEmployees: 0 });
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -96,6 +98,39 @@ const HRDashboard = () => {
                                 </div>
                                 <div className="bg-danger text-white p-3 rounded-circle" style={{ opacity: 0.8, backgroundColor: '#dc3545 !important' }}>
                                     <FaClipboardList size={24} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 className="fw-bold mb-4 mt-5">Quick Actions</h4>
+                <div className="row g-4 mb-5">
+                    {/* QR Access */}
+                    <div className="col-md-6 col-lg-3" onClick={() => navigate('/admin/qr-dashboard')} style={{ cursor: 'pointer' }}>
+                        <div className="card h-100 border-0 p-4 dashboard-stat-card" style={{ background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.05) 100%)', borderLeft: '4px solid #ffc107 !important' }}>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 className="text-muted text-uppercase fw-bold mb-2">Display QR</h6>
+                                    <p className="text-muted mb-0 small">Open QR for Scans</p>
+                                </div>
+                                <div className="bg-warning text-dark p-3 rounded-circle" style={{ opacity: 0.8 }}>
+                                    <FaQrcode size={24} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Email Dashboard Access */}
+                    <div className="col-md-6 col-lg-3" onClick={() => navigate('/admin/email-dashboard')} style={{ cursor: 'pointer' }}>
+                        <div className="card h-100 border-0 p-4 dashboard-stat-card" style={{ background: 'linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(220, 53, 69, 0.05) 100%)', borderLeft: '4px solid #dc3545 !important' }}>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 className="text-muted text-uppercase fw-bold mb-2">Email Tools</h6>
+                                    <p className="text-muted mb-0 small">Manage Payslips</p>
+                                </div>
+                                <div className="bg-danger text-white p-3 rounded-circle" style={{ opacity: 0.8 }}>
+                                    <FaEnvelope size={24} />
                                 </div>
                             </div>
                         </div>

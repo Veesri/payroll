@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { FaClock, FaCalendarAlt, FaMoneyBillWave, FaFileInvoiceDollar } from 'react-icons/fa';
+import { FaClock, FaCalendarAlt, FaMoneyBillWave, FaFileInvoiceDollar, FaQrcode } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 
 const EmployeeDashboard = () => {
@@ -13,6 +14,7 @@ const EmployeeDashboard = () => {
         recentActivities: []
     });
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -101,6 +103,21 @@ const EmployeeDashboard = () => {
                                 </div>
                                 <div className="bg-warning text-white p-3 rounded-circle" style={{ opacity: 0.8, backgroundColor: '#f59e0b !important' }}>
                                     <FaMoneyBillWave size={24} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Employee QR Scan */}
+                    <div className="col-md-6 col-lg-3" onClick={() => navigate('/employee/qr-scan')} style={{ cursor: 'pointer' }}>
+                        <div className="card h-100 border-0 p-4 dashboard-stat-card" style={{ background: 'linear-gradient(135deg, rgba(13, 202, 240, 0.2) 0%, rgba(13, 202, 240, 0.05) 100%)', borderLeft: '4px solid #0dcaf0 !important' }}>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 className="text-muted text-uppercase fw-bold mb-2">Scan QR</h6>
+                                    <p className="text-muted mb-0 small">Mark Attendance</p>
+                                </div>
+                                <div className="bg-info text-white p-3 rounded-circle" style={{ opacity: 0.8 }}>
+                                    <FaQrcode size={24} />
                                 </div>
                             </div>
                         </div>

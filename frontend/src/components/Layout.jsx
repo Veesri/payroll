@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { FaHome, FaBuilding, FaUsers, FaSignOutAlt, FaCalendarCheck, FaUserCheck, FaRupeeSign, FaMoneyBillWave } from 'react-icons/fa';
+import { FaHome, FaBuilding, FaUsers, FaSignOutAlt, FaCalendarCheck, FaUserCheck, FaRupeeSign, FaMoneyBillWave, FaQrcode, FaEnvelope, FaCog } from 'react-icons/fa';
 
 const Layout = ({ children }) => {
     const { user, logout } = useContext(AuthContext);
@@ -24,8 +24,12 @@ const Layout = ({ children }) => {
         { path: '/admin/leave-approvals', name: 'HR Leave Approvals', icon: <FaUserCheck />, roles: ['super_admin'] },
         { path: '/hr/salary', name: 'Salary Config', icon: <FaRupeeSign />, roles: ['super_admin', 'hr_admin'] },
         { path: '/hr/payroll', name: 'Payroll Engine', icon: <FaMoneyBillWave />, roles: ['super_admin', 'hr_admin'] },
+        { path: '/admin/qr-dashboard', name: 'QR Display', icon: <FaQrcode />, roles: ['super_admin', 'hr_admin'] },
+        { path: '/admin/email-dashboard', name: 'Email Dashboard', icon: <FaEnvelope />, roles: ['super_admin', 'hr_admin'] },
+        { path: '/admin/email-settings', name: 'Email Settings', icon: <FaCog />, roles: ['super_admin', 'hr_admin'] },
         // Employee Portal routes
         { path: '/employee/profile', name: 'Profile', icon: <FaUsers />, roles: ['employee'] },
+        { path: '/employee/qr-scan', name: 'Scan QR Attendance', icon: <FaQrcode />, roles: ['employee'] },
         { path: '/employee/attendance', name: 'Attendance', icon: <FaBuilding />, roles: ['employee'] },
         { path: '/employee/leave', name: 'Leave', icon: <FaBuilding />, roles: ['employee'] },
         { path: '/employee/salary', name: 'Salary', icon: <FaRupeeSign />, roles: ['employee'] },

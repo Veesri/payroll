@@ -137,8 +137,6 @@ def send_email_job(app):
                                 server.quit()
                             except:
                                 pass
-            except Exception as e:
-                print(f"Email Worker Loop Error: {e}")
         except Exception as e:
             print(f"Worker Context Error: {e}")
             
