@@ -20,6 +20,12 @@ import HRLeaveManagement from './pages/HRLeaveManagement';
 import HRAttendance from './pages/HRAttendance';
 import HRApplyLeave from './pages/HRApplyLeave';
 import SuperAdminLeaveApprovals from './pages/SuperAdminLeaveApprovals';
+import QRDashboard from './components/admin/QRDashboard';
+import QRScanner from './components/employee/QRScanner';
+import EmailSettings from './pages/email/EmailSettings';
+import EmailTemplates from './pages/email/EmailTemplates';
+import EmailComposer from './pages/email/EmailComposer';
+import EmailDashboard from './pages/email/EmailDashboard';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const { user, loading } = useContext(AuthContext);
@@ -146,8 +152,43 @@ const App = () => {
                             <EmployeeManagement />
                         </ProtectedRoute>
                     } />
+                    
+                    {/* QR Attendance Routes */}
+                    <Route path="/admin/qr-dashboard" element={
+                        <ProtectedRoute allowedRoles={['super_admin', 'hr_admin']}>
+                            <QRDashboard />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/employee/qr-scan" element={
+                        <ProtectedRoute allowedRoles={['employee']}>
+                            <QRScanner />
+                        </ProtectedRoute>
+                    } />
+
+                    {/* Email Management Routes */}
+                    <Route path="/admin/email-settings" element={
+                        <ProtectedRoute allowedRoles={['super_admin', 'hr_admin']}>
+                            <EmailSettings />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/admin/email-templates" element={
+                        <ProtectedRoute allowedRoles={['super_admin', 'hr_admin']}>
+                            <EmailTemplates />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/admin/email-compose" element={
+                        <ProtectedRoute allowedRoles={['super_admin', 'hr_admin']}>
+                            <EmailComposer />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/admin/email-dashboard" element={
+                        <ProtectedRoute allowedRoles={['super_admin', 'hr_admin']}>
+                            <EmailDashboard />
+                        </ProtectedRoute>
+                    } />
 
                     {/* Catch all unmatched routes */}
+
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </Router>

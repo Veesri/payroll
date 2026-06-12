@@ -35,22 +35,26 @@ def create_app(config_class=Config):
 
     # Register blueprints (routes)
     from routes.auth import auth_bp
-    from routes.department import department_bp
-    from routes.employee import employee_bp
+    from routes.department import department_bp as dept_bp
+    from routes.employee import employee_bp as emp_bp
     from routes.attendance import attendance_bp
     from routes.leaves import leave_bp
     from routes.salary import salary_bp
     from routes.payroll import payroll_bp
     from routes.payslip import payslip_bp
+    from routes.dashboard import dashboard_bp
+    from routes.email import email_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(department_bp, url_prefix='/api/departments')
-    app.register_blueprint(employee_bp, url_prefix='/api/employees')
+    app.register_blueprint(dept_bp, url_prefix='/api/departments')
+    app.register_blueprint(emp_bp, url_prefix='/api/employees')
     app.register_blueprint(attendance_bp, url_prefix='/api/attendance')
     app.register_blueprint(leave_bp, url_prefix='/api/leaves')
     app.register_blueprint(salary_bp, url_prefix='/api/salary')
     app.register_blueprint(payroll_bp, url_prefix='/api/payroll')
     app.register_blueprint(payslip_bp, url_prefix='/api/payslips')
+    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    app.register_blueprint(email_bp, url_prefix='/api/email')
 
     @app.route('/health', methods=['GET'])
     def health_check():
@@ -58,8 +62,15 @@ def create_app(config_class=Config):
 
     return app
 
+app = create_app()
+with app.app_context():
+    db.create_all()
+
+try:
+    from utils.email_worker import start_email_worker
+    start_email_worker(app)
+except Exception as e:
+    print(f"Failed to start email worker: {e}")
+
 if __name__ == '__main__':
-    app = create_app()
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5000)

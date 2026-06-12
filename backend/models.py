@@ -64,7 +64,47 @@ class Attendance(db.Model):
     status = db.Column(db.String(50)) # 'present', 'absent', 'half_day', 'late', 'leave'
     working_hours = db.Column(db.Float)
     attendance_source = db.Column(db.String(50)) # 'web', 'qr', 'manual'
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    ip_address = db.Column(db.String(50), nullable=True)
+    device_details = db.Column(db.String(255), nullable=True)
+    qr_session_id = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AttendanceQR(db.Model):
+    __tablename__ = 'attendance_qr'
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(100), unique=True, nullable=False)
+    token = db.Column(db.Text, nullable=False)
+    generated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(50), default='active')
+
+class GPSSettings(db.Model):
+    __tablename__ = 'gps_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    radius = db.Column(db.Float, nullable=False) # in meters
+
+class AttendanceRule(db.Model):
+    __tablename__ = 'attendance_rules'
+    id = db.Column(db.Integer, primary_key=True)
+    office_start_time = db.Column(db.Time, nullable=False)
+    grace_minutes = db.Column(db.Integer, default=0)
+    half_day_hours = db.Column(db.Float, default=4.0)
+    overtime_hours = db.Column(db.Float, default=8.0)
+
+class AttendanceLog(db.Model):
+    __tablename__ = 'attendance_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    action = db.Column(db.String(50), nullable=False)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    device = db.Column(db.String(255), nullable=True)
+    ip_address = db.Column(db.String(50), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class LeaveType(db.Model):
     __tablename__ = 'leave_types'
@@ -148,3 +188,52 @@ class Notification(db.Model):
     message = db.Column(db.String(255), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class EmailSettings(db.Model):
+    __tablename__ = 'email_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    provider_type = db.Column(db.String(50), default='smtp')
+    smtp_host = db.Column(db.String(255))
+    smtp_port = db.Column(db.Integer)
+    smtp_username = db.Column(db.String(255))
+    smtp_password = db.Column(db.String(255)) # Note: In production, encrypt this
+    use_tls = db.Column(db.Boolean, default=True)
+    use_ssl = db.Column(db.Boolean, default=False)
+    sender_name = db.Column(db.String(255))
+    sender_email = db.Column(db.String(255))
+    reply_to = db.Column(db.String(255))
+    status = db.Column(db.String(50), default='active')
+
+class EmailTemplate(db.Model):
+    __tablename__ = 'email_templates'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=False) # Rich text/HTML
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class EmailQueue(db.Model):
+    __tablename__ = 'email_queue'
+    id = db.Column(db.Integer, primary_key=True)
+    recipient = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    attachment_path = db.Column(db.String(255), nullable=True) # comma separated paths
+    status = db.Column(db.String(50), default='pending') # pending, sent, failed
+    retry_count = db.Column(db.Integer, default=0)
+    scheduled_for = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class EmailLog(db.Model):
+    __tablename__ = 'email_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    email_queue_id = db.Column(db.Integer, db.ForeignKey('email_queue.id'), nullable=True)
+    recipient = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    template_used = db.Column(db.String(100), nullable=True)
+    status = db.Column(db.String(50), nullable=False) # sent, failed
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    provider = db.Column(db.String(50), nullable=True)
+    error_message = db.Column(db.Text, nullable=True)
+

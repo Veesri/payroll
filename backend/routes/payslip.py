@@ -228,6 +228,7 @@ def view_payslip(id):
 @jwt_required()
 @role_required(['hr_admin', 'super_admin'])
 def email_payslip(id):
+    from models import EmailQueue
     p = Payslip.query.get_or_404(id)
     emp = p.employee
     
@@ -240,20 +241,45 @@ def email_payslip(id):
         
     month_name = datetime(p.year, p.month, 1).strftime('%B')
     
-    msg = Message(
-        subject=f"Salary Slip - {month_name} {p.year}",
-        recipients=[emp.email],
-        body=f"Dear {emp.first_name},\n\nPlease find attached your salary slip for the month of {month_name} {p.year}.\n\nBest Regards,\nHR Department"
-    )
-    
-    with open(filepath, 'rb') as fp:
-        msg.attach(os.path.basename(filepath), "application/pdf", fp.read())
-        
     try:
-        current_app.mail.send(msg)
-        print(f"DUMMY EMAIL SENT TO: {emp.email} WITH PDF: {os.path.basename(filepath)}")
+        q = EmailQueue(
+            recipient=emp.email,
+            subject=f"Payslip For {month_name} {p.year}",
+            body=f"<p>Dear {emp.first_name},</p><p>Your payslip for {month_name} {p.year} has been generated.</p><p>Please find the attached payslip.</p><p>Thank you.</p><p>HR Department</p>",
+            attachment_path=filepath
+        )
+        db.session.add(q)
+        
         p.email_sent = True
         db.session.commit()
-        return jsonify(message="Email sent successfully (Simulated in Dev)"), 200
+        return jsonify(message="Email queued for background delivery"), 200
     except Exception as e:
-        return jsonify(message=f"Failed to send email: {str(e)}"), 500
+        return jsonify(message=f"Failed to queue email: {str(e)}"), 500
+
+@payslip_bp.route('/email-bulk/<int:month>/<int:year>', methods=['POST'])
+@jwt_required()
+@role_required(['hr_admin', 'super_admin'])
+def email_bulk_payslips(month, year):
+    from models import EmailQueue
+    payslips = Payslip.query.filter_by(month=month, year=year, email_sent=False).all()
+    
+    queued_count = 0
+    for p in payslips:
+        emp = p.employee
+        if emp.email:
+            filepath = os.path.join(current_app.static_folder, p.pdf_path.replace('/uploads/', ''))
+            if os.path.exists(filepath):
+                month_name = datetime(p.year, p.month, 1).strftime('%B')
+                q = EmailQueue(
+                    recipient=emp.email,
+                    subject=f"Payslip For {month_name} {p.year}",
+                    body=f"<p>Dear {emp.first_name},</p><p>Your payslip for {month_name} {p.year} has been generated.</p><p>Please find the attached payslip.</p><p>Thank you.</p><p>HR Department</p>",
+                    attachment_path=filepath
+                )
+                db.session.add(q)
+                p.email_sent = True
+                queued_count += 1
+                
+    db.session.commit()
+    return jsonify(message=f"{queued_count} payslip emails queued successfully"), 200
+

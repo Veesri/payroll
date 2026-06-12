@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { AuthContext } from '../context/AuthContext';
-import { FaMoneyBillWave, FaCogs, FaCheckCircle, FaRupeeSign, FaDownload } from 'react-icons/fa';
+import { FaMoneyBillWave, FaCogs, FaCheckCircle, FaRupeeSign, FaDownload, FaEnvelope } from 'react-icons/fa';
 
 const PayrollDashboard = () => {
     const [payrolls, setPayrolls] = useState([]);
@@ -107,6 +107,17 @@ const PayrollDashboard = () => {
         }
     };
 
+    const handleBulkEmail = async () => {
+        if (!window.confirm(`Are you sure you want to queue all unsent payslips for ${filterMonth}/${filterYear}?`)) return;
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payslips/email-bulk/${filterMonth}/${filterYear}`, {}, { headers });
+            alert(res.data.message);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to queue emails.");
+        }
+    };
+
     if (loading) return <Layout><div className="text-center mt-5"><div className="spinner-border text-primary" role="status"></div></div></Layout>;
 
     return (
@@ -117,9 +128,14 @@ const PayrollDashboard = () => {
                         <h1 className="fw-bold mb-0">Payroll Engine</h1>
                         <p className="text-muted">Process and manage employee salaries</p>
                     </div>
-                    <button className="btn btn-primary btn-lg shadow-sm" onClick={() => setShowModal(true)}>
-                        <FaCogs className="me-2" /> Generate Payroll
-                    </button>
+                    <div className="d-flex gap-2">
+                        <button className="btn btn-outline-info btn-lg shadow-sm" onClick={handleBulkEmail}>
+                            <FaEnvelope className="me-2" /> Send All Payslips
+                        </button>
+                        <button className="btn btn-primary btn-lg shadow-sm" onClick={() => setShowModal(true)}>
+                            <FaCogs className="me-2" /> Generate Payroll
+                        </button>
+                    </div>
                 </div>
 
                 <div className="row g-4 mb-5">

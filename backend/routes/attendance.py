@@ -1,8 +1,30 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Attendance, Employee, User
-from datetime import datetime, date
+from models import db, Attendance, Employee, User, AttendanceQR, AttendanceLog, GPSSettings, AttendanceRule
+from datetime import datetime, date, timedelta
 from routes.employee import role_required
+import uuid
+import jwt
+import base64
+import hashlib
+from cryptography.fernet import Fernet
+import math
+import os
+
+def get_cipher():
+    secret = os.environ.get('JWT_SECRET_KEY', 'super-secret-jwt-key')
+    fernet_key = base64.urlsafe_b64encode(hashlib.sha256(secret.encode()).digest())
+    return Fernet(fernet_key)
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000
+    phi_1 = math.radians(lat1)
+    phi_2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi_1) * math.cos(phi_2) * math.sin(delta_lambda / 2.0) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
 
 attendance_bp = Blueprint('attendance', __name__)
 
@@ -176,3 +198,212 @@ def get_report():
         'absent_today': absent,
         'total_employees': total_employees
     }), 200
+
+@attendance_bp.route('/qr/generate', methods=['POST'])
+@jwt_required()
+@role_required(['super_admin', 'hr_admin'])
+def generate_qr():
+    # Invalidate existing active QRs
+    active_qrs = AttendanceQR.query.filter_by(status='active').all()
+    for aqr in active_qrs:
+        aqr.status = 'closed'
+    
+    # Expiry options can be requested, default 1 min
+    data = request.get_json() or {}
+    expiry_minutes = int(data.get('expiry_minutes', 1))
+    
+    now = datetime.utcnow()
+    expires_at = now + timedelta(minutes=expiry_minutes)
+    
+    session_id = f"ATT{now.strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
+    
+    secret = os.environ.get('JWT_SECRET_KEY', 'super-secret-jwt-key')
+    payload = {
+        "session_id": session_id,
+        "generated_at": now.isoformat(),
+        "expires_at": expires_at.isoformat()
+    }
+    jwt_token = jwt.encode(payload, secret, algorithm="HS256")
+    
+    cipher = get_cipher()
+    encrypted_token = cipher.encrypt(jwt_token.encode()).decode()
+    
+    qr_record = AttendanceQR(
+        session_id=session_id,
+        token=encrypted_token,
+        generated_at=now,
+        expires_at=expires_at,
+        status='active'
+    )
+    db.session.add(qr_record)
+    
+    log = AttendanceLog(
+        employee_id=User.query.get(get_jwt_identity()).employee.id if User.query.get(get_jwt_identity()).employee else 1,
+        action="qr_generate"
+    )
+    db.session.add(log)
+    
+    db.session.commit()
+    
+    return jsonify({
+        "message": "QR Generated Successfully",
+        "qr_data": {
+            "session_id": session_id,
+            "token": encrypted_token,
+            "generated_at": now.isoformat(),
+            "expires_at": expires_at.isoformat()
+        }
+    }), 201
+
+@attendance_bp.route('/qr/active', methods=['GET'])
+@jwt_required()
+@role_required(['super_admin', 'hr_admin'])
+def get_active_qr():
+    qr = AttendanceQR.query.filter_by(status='active').first()
+    if not qr:
+        return jsonify({"message": "No active QR found"}), 404
+    
+    if datetime.utcnow() > qr.expires_at:
+        qr.status = 'expired'
+        db.session.commit()
+        return jsonify({"message": "Active QR has expired"}), 404
+        
+    return jsonify({
+        "qr_data": {
+            "session_id": qr.session_id,
+            "token": qr.token,
+            "generated_at": qr.generated_at.isoformat(),
+            "expires_at": qr.expires_at.isoformat()
+        }
+    }), 200
+
+@attendance_bp.route('/qr/scan', methods=['POST'])
+@jwt_required()
+def scan_qr():
+    user_id = get_jwt_identity()
+    employee = Employee.query.filter_by(user_id=user_id).first()
+    if not employee:
+        return jsonify({'message': 'Employee record not found'}), 404
+        
+    data = request.get_json() or {}
+    token = data.get('token')
+    lat = data.get('latitude')
+    lng = data.get('longitude')
+    device = request.user_agent.string
+    ip = request.remote_addr
+    
+    def create_log(action_str):
+        log = AttendanceLog(
+            employee_id=employee.id,
+            action=action_str,
+            latitude=lat,
+            longitude=lng,
+            device=device,
+            ip_address=ip
+        )
+        db.session.add(log)
+        db.session.commit()
+    
+    if not token:
+        create_log("scan_rejected_missing_token")
+        return jsonify({'message': 'QR token is missing'}), 400
+        
+    # Decrypt and Verify
+    cipher = get_cipher()
+    secret = os.environ.get('JWT_SECRET_KEY', 'super-secret-jwt-key')
+    
+    try:
+        decrypted_jwt = cipher.decrypt(token.encode()).decode()
+        payload = jwt.decode(decrypted_jwt, secret, algorithms=["HS256"])
+    except Exception as e:
+        create_log("scan_rejected_tampered")
+        return jsonify({'message': 'Invalid or Tampered QR Token'}), 400
+        
+    session_id = payload.get("session_id")
+    
+    qr_record = AttendanceQR.query.filter_by(session_id=session_id).first()
+    if not qr_record:
+        create_log("scan_rejected_invalid_session")
+        return jsonify({'message': 'QR Session not found'}), 404
+        
+    if qr_record.status != 'active' or datetime.utcnow() > qr_record.expires_at:
+        if qr_record.status == 'active':
+            qr_record.status = 'expired'
+            db.session.commit()
+        create_log("scan_rejected_expired")
+        return jsonify({'message': 'QR Code has expired'}), 400
+
+    # GPS Validation
+    if lat is None or lng is None:
+        create_log("scan_rejected_no_gps")
+        return jsonify({'message': 'GPS Location is required'}), 400
+        
+    gps_setting = GPSSettings.query.first()
+    if gps_setting:
+        distance = haversine(float(lat), float(lng), gps_setting.latitude, gps_setting.longitude)
+        if distance > gps_setting.radius:
+            create_log("scan_rejected_outside_radius")
+            return jsonify({'message': 'You are outside office premises.'}), 400
+            
+    # Business Logic (Check-in / Check-out)
+    now = datetime.now()
+    today = date.today()
+    existing_attendance = Attendance.query.filter_by(employee_id=employee.id, attendance_date=today).first()
+    
+    rules = AttendanceRule.query.first()
+    
+    if not existing_attendance or not existing_attendance.check_in:
+        # Check-in flow
+        status = 'present'
+        if rules and rules.office_start_time:
+            # check late
+            grace_dt = datetime.combine(today, rules.office_start_time) + timedelta(minutes=rules.grace_minutes)
+            if now > grace_dt:
+                status = 'late'
+                
+        if not existing_attendance:
+            attendance = Attendance(
+                employee_id=employee.id,
+                attendance_date=today,
+                check_in=now.time(),
+                status=status,
+                attendance_source='qr',
+                latitude=lat,
+                longitude=lng,
+                ip_address=ip,
+                device_details=device,
+                qr_session_id=session_id
+            )
+            db.session.add(attendance)
+        else:
+            existing_attendance.check_in = now.time()
+            existing_attendance.status = status
+            existing_attendance.attendance_source = 'qr'
+            existing_attendance.qr_session_id = session_id
+        
+        create_log("check_in_success")
+        return jsonify({'message': 'Check-in successful', 'time': now.strftime("%I:%M %p")}), 200
+    
+    else:
+        # Check-out flow
+        if existing_attendance.check_out:
+            create_log("scan_rejected_duplicate")
+            return jsonify({'message': 'Attendance already marked.'}), 400
+            
+        existing_attendance.check_out = now.time()
+        
+        check_in_dt = datetime.combine(today, existing_attendance.check_in)
+        check_out_dt = datetime.combine(today, existing_attendance.check_out)
+        duration = check_out_dt - check_in_dt
+        working_hours = round(duration.total_seconds() / 3600, 2)
+        existing_attendance.working_hours = working_hours
+        
+        if rules:
+            if working_hours < rules.half_day_hours:
+                existing_attendance.status = 'half_day'
+            if working_hours > rules.overtime_hours:
+                # Add logic for overtime if needed or adjust status
+                pass
+                
+        create_log("check_out_success")
+        return jsonify({'message': 'Check-out successful', 'working_hours': working_hours, 'time': now.strftime("%I:%M %p")}), 200
