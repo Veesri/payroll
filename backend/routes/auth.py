@@ -151,14 +151,33 @@ def me():
     if not user:
         return jsonify({'message': 'User not found'}), 404
         
+    if not user.employee and user.role in ['hr_admin', 'super_admin']:
+        # Auto-create a stub employee record so Admins can use the personal portals
+        stub_employee = Employee(
+            user_id=user.id,
+            first_name=user.username,
+            last_name='(Admin)',
+            email=f"{user.username}@system.local",
+            status='active'
+        )
+        db.session.add(stub_employee)
+        db.session.commit()
+        db.session.refresh(user)
+
     employee_data = None
     if user.employee:
         employee_data = {
             'id': user.employee.id,
             'first_name': user.employee.first_name,
             'last_name': user.employee.last_name,
+            'email': user.employee.email,
+            'phone': user.employee.phone,
             'department_id': user.employee.department_id,
+            'department': user.employee.department.name if user.employee.department else 'Unassigned',
             'designation': user.employee.designation,
+            'status': user.employee.status,
+            'photo_url': user.employee.photo_url,
+            'basic_salary': user.employee.salary_structure.basic_salary if user.employee.salary_structure else 0,
         }
 
     return jsonify({

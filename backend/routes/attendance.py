@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Attendance, Employee, User, AttendanceQR, AttendanceLog, GPSSettings, AttendanceRule
 from datetime import datetime, date, timedelta
 from routes.employee import role_required
+from sqlalchemy.orm import joinedload
 import uuid
 import jwt
 import base64
@@ -143,7 +144,9 @@ def get_attendance():
     per_page = request.args.get('per_page', 10, type=int)
     employee_id_filter = request.args.get('employee_id', type=int)
     
-    query = Attendance.query
+    query = Attendance.query.options(
+        joinedload(Attendance.employee).joinedload(Employee.department)
+    )
 
     if user.role == 'employee':
         employee = Employee.query.filter_by(user_id=user_id).first()
@@ -157,18 +160,19 @@ def get_attendance():
     
     records = []
     for a in pagination.items:
-        emp = Employee.query.get(a.employee_id)
-        records.append({
-            'id': a.id,
-            'employee_name': f"{emp.first_name} {emp.last_name}",
-            'department': emp.department.name if emp.department else None,
-            'date': a.attendance_date.strftime('%Y-%m-%d'),
-            'check_in': a.check_in.strftime('%I:%M %p') if a.check_in else '-',
-            'check_out': a.check_out.strftime('%I:%M %p') if a.check_out else '-',
-            'working_hours': a.working_hours or 0,
-            'status': a.status,
-            'source': a.attendance_source
-        })
+        emp = a.employee
+        if emp:
+            records.append({
+                'id': a.id,
+                'employee_name': f"{emp.first_name} {emp.last_name}",
+                'department': emp.department.name if emp.department else None,
+                'date': a.attendance_date.strftime('%Y-%m-%d'),
+                'check_in': a.check_in.strftime('%I:%M %p') if a.check_in else '-',
+                'check_out': a.check_out.strftime('%I:%M %p') if a.check_out else '-',
+                'working_hours': a.working_hours or 0,
+                'status': a.status,
+                'source': a.attendance_source
+            })
 
     return jsonify({
         'attendance': records,

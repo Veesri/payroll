@@ -1,6 +1,7 @@
 import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
 from datetime import datetime
 
 def generate_excel_report(title, headers, data_rows):
@@ -50,7 +51,7 @@ def generate_excel_report(title, headers, data_rows):
     # Auto-size columns
     for col in ws.columns:
         max_length = 0
-        column = col[0].column_letter # Get the column name
+        column = get_column_letter(col[0].column) # Get the column name
         for cell in col:
             try:
                 if len(str(cell.value)) > max_length:

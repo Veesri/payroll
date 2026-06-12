@@ -115,7 +115,7 @@ const DepartmentManagement = () => {
                 {/* Modal overlay */}
                 {showModal && (
                     <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)' }}>
-                        <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-dialog modal-dialog-centered modal-lg">
                             <div className="modal-content border-0 shadow-lg" style={{ background: 'rgba(20, 20, 30, 0.98)', backdropFilter: 'blur(10px)' }}>
                                 <div className="modal-header border-secondary">
                                     <h5 className="modal-title fw-bold text-white">{currentDept ? 'Edit Department' : 'Add Department'}</h5>

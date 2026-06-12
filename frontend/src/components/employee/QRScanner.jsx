@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import Layout from '../Layout';
 
 const QRScanner = () => {
   const [scanResult, setScanResult] = useState(null);
@@ -72,34 +73,36 @@ const QRScanner = () => {
   };
 
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4 text-center">Mark Attendance</h2>
-      
-      <div className="row justify-content-center">
-        <div className="col-md-6">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              {error && <div className="alert alert-danger">{error}</div>}
-              {scanResult && (
-                <div className="alert alert-success">
-                  <h5 className="alert-heading mb-1">{scanResult.message}</h5>
-                  {scanResult.time && <p className="mb-0"><strong>Recorded Time:</strong> {scanResult.time}</p>}
-                  {scanResult.workingHours && <p className="mb-0"><strong>Total Hours Today:</strong> {scanResult.workingHours} hours</p>}
-                </div>
-              )}
-              
-              {!location && !error && (
-                <div className="alert alert-warning">Requesting GPS Location...</div>
-              )}
+    <Layout>
+      <div className="slide-up-animation">
+        <h2 className="fw-bold mb-4 text-center">Mark Attendance</h2>
+        
+        <div className="row justify-content-center">
+          <div className="col-md-6">
+            <div className="card shadow-sm">
+              <div className="card-body">
+                {error && <div className="alert alert-danger">{error}</div>}
+                {scanResult && (
+                  <div className="alert alert-success">
+                    <h5 className="alert-heading mb-1">{scanResult.message}</h5>
+                    {scanResult.time && <p className="mb-0"><strong>Recorded Time:</strong> {scanResult.time}</p>}
+                    {scanResult.workingHours && <p className="mb-0"><strong>Total Hours Today:</strong> {scanResult.workingHours} hours</p>}
+                  </div>
+                )}
+                
+                {!location && !error && (
+                  <div className="alert alert-warning">Requesting GPS Location...</div>
+                )}
 
-              <div id="qr-reader" style={{ width: '100%' }}></div>
-              
-              {loading && <div className="text-center mt-3"><div className="spinner-border text-primary"></div></div>}
+                <div id="qr-reader" style={{ width: '100%' }}></div>
+                
+                {loading && <div className="text-center mt-3"><div className="spinner-border text-primary"></div></div>}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

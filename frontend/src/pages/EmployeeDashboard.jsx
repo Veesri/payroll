@@ -7,13 +7,19 @@ import Layout from '../components/Layout';
 
 const EmployeeDashboard = () => {
     const { user } = useContext(AuthContext);
-    const [stats, setStats] = useState({
-        presentDays: 0,
-        leaveBalance: 0,
-        netSalary: 0,
-        recentActivities: []
+    const [stats, setStats] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_dashboard');
+        return cached ? JSON.parse(cached) : {
+            presentDays: 0,
+            leaveBalance: 0,
+            netSalary: 0,
+            recentActivities: []
+        };
     });
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_dashboard');
+        return !cached;
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -42,12 +48,14 @@ const EmployeeDashboard = () => {
                 leaves.slice(0, 2).forEach(l => activities.push({ id: `lv-${l.id}`, action: `Leave ${l.status}`, time: `Applied on ${l.applied_at}` }));
                 activities.sort((a,b) => b.id.localeCompare(a.id));
                 
-                setStats({
+                const newStats = {
                     presentDays,
                     leaveBalance,
                     netSalary: 45000, // Still placeholder until Phase 5
                     recentActivities: activities.slice(0, 5)
-                });
+                };
+                setStats(newStats);
+                sessionStorage.setItem('cache_employee_dashboard', JSON.stringify(newStats));
             } catch (error) {
                 console.error("Failed to fetch dashboard stats", error);
             } finally {

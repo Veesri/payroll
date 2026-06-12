@@ -6,8 +6,14 @@ import Layout from '../components/Layout';
 
 const EmployeeAttendance = () => {
     const { user } = useContext(AuthContext);
-    const [attendanceHistory, setAttendanceHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [attendanceHistory, setAttendanceHistory] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_attendance');
+        return cached ? JSON.parse(cached) : [];
+    });
+    const [loading, setLoading] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_attendance');
+        return !cached;
+    });
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     
@@ -19,6 +25,9 @@ const EmployeeAttendance = () => {
             const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/attendance/?page=${page}`, { headers });
             setAttendanceHistory(res.data.attendance);
             setTotalPages(res.data.pages);
+            if (page === 1) {
+                sessionStorage.setItem('cache_employee_attendance', JSON.stringify(res.data.attendance));
+            }
         } catch (error) {
             console.error("Failed to fetch attendance", error);
         } finally {

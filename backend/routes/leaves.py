@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Leave, LeaveType, Employee, User
 from datetime import datetime
 from routes.employee import role_required
+from sqlalchemy.orm import joinedload
 
 leave_bp = Blueprint('leave', __name__)
 
@@ -73,7 +74,10 @@ def get_leaves():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     
-    query = Leave.query
+    query = Leave.query.options(
+        joinedload(Leave.employee),
+        joinedload(Leave.leave_type)
+    )
 
     personal = request.args.get('personal') == 'true'
     
@@ -107,19 +111,20 @@ def get_leaves():
     
     records = []
     for l in pagination.items:
-        emp = Employee.query.get(l.employee_id)
-        l_type = LeaveType.query.get(l.leave_type_id)
-        records.append({
-            'id': l.id,
-            'employee_name': f"{emp.first_name} {emp.last_name}",
-            'leave_type': l_type.name,
-            'from_date': l.from_date.strftime('%Y-%m-%d'),
-            'to_date': l.to_date.strftime('%Y-%m-%d'),
-            'status': l.status,
-            'reason': l.reason,
-            'comments': l.comments,
-            'applied_at': l.applied_at.strftime('%Y-%m-%d') if l.applied_at else None
-        })
+        emp = l.employee
+        l_type = l.leave_type
+        if emp and l_type:
+            records.append({
+                'id': l.id,
+                'employee_name': f"{emp.first_name} {emp.last_name}",
+                'leave_type': l_type.name,
+                'from_date': l.from_date.strftime('%Y-%m-%d'),
+                'to_date': l.to_date.strftime('%Y-%m-%d'),
+                'status': l.status,
+                'reason': l.reason,
+                'comments': l.comments,
+                'applied_at': l.applied_at.strftime('%Y-%m-%d') if l.applied_at else None
+            })
 
     return jsonify({
         'leaves': records,

@@ -22,18 +22,18 @@ const Layout = ({ children }) => {
         { path: '/hr/leave', name: 'Employee Leave Approvals', icon: <FaUserCheck />, roles: ['super_admin', 'hr_admin'] },
         { path: '/hr/apply-leave', name: 'My Leave', icon: <FaCalendarCheck />, roles: ['hr_admin'] },
         { path: '/admin/leave-approvals', name: 'HR Leave Approvals', icon: <FaUserCheck />, roles: ['super_admin'] },
-        { path: '/hr/salary', name: 'Salary Config', icon: <FaRupeeSign />, roles: ['super_admin', 'hr_admin'] },
-        { path: '/hr/payroll', name: 'Payroll Engine', icon: <FaMoneyBillWave />, roles: ['super_admin', 'hr_admin'] },
+        { path: '/hr/salary', name: 'Salary Config', icon: <FaRupeeSign />, roles: ['super_admin'] },
+        { path: '/hr/payroll', name: 'Payroll Engine', icon: <FaMoneyBillWave />, roles: ['super_admin'] },
         { path: '/admin/qr-dashboard', name: 'QR Display', icon: <FaQrcode />, roles: ['super_admin', 'hr_admin'] },
         { path: '/admin/email-dashboard', name: 'Email Dashboard', icon: <FaEnvelope />, roles: ['super_admin', 'hr_admin'] },
         { path: '/admin/email-settings', name: 'Email Settings', icon: <FaCog />, roles: ['super_admin', 'hr_admin'] },
         // Employee Portal routes
-        { path: '/employee/profile', name: 'Profile', icon: <FaUsers />, roles: ['employee'] },
-        { path: '/employee/qr-scan', name: 'Scan QR Attendance', icon: <FaQrcode />, roles: ['employee'] },
-        { path: '/employee/attendance', name: 'Attendance', icon: <FaBuilding />, roles: ['employee'] },
+        { path: '/employee/profile', name: 'Profile', icon: <FaUsers />, roles: ['employee', 'hr_admin'] },
+        { path: '/employee/qr-scan', name: 'Scan QR Attendance', icon: <FaQrcode />, roles: ['employee', 'hr_admin'] },
+        { path: '/employee/attendance', name: 'My Attendance', icon: <FaBuilding />, roles: ['employee', 'hr_admin'] },
         { path: '/employee/leave', name: 'Leave', icon: <FaBuilding />, roles: ['employee'] },
-        { path: '/employee/salary', name: 'Salary', icon: <FaRupeeSign />, roles: ['employee'] },
-        { path: '/employee/payslips', name: 'My Payslips', icon: <FaMoneyBillWave />, roles: ['employee'] },
+        { path: '/employee/salary', name: 'My Salary', icon: <FaRupeeSign />, roles: ['employee', 'hr_admin'] },
+        { path: '/employee/payslips', name: 'My Payslips', icon: <FaMoneyBillWave />, roles: ['employee', 'hr_admin'] },
     ];
 
     return (

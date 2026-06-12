@@ -7,8 +7,14 @@ import Layout from '../components/Layout';
 
 const HRDashboard = () => {
     const { user } = useContext(AuthContext);
-    const [stats, setStats] = useState({ totalEmployees: 0, activeEmployees: 0 });
-    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState(() => {
+        const cached = sessionStorage.getItem('cache_hr_dashboard_stats');
+        return cached ? JSON.parse(cached) : { totalEmployees: 0, activeEmployees: 0, presentToday: 0, absentToday: 0, attendancePercentage: 0 };
+    });
+    const [loading, setLoading] = useState(() => {
+        const cached = sessionStorage.getItem('cache_hr_dashboard_stats');
+        return !cached;
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -23,13 +29,15 @@ const HRDashboard = () => {
                 const reportRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/attendance/report`, { headers });
                 const report = reportRes.data;
                 
-                setStats({
+                const newStats = {
                     totalEmployees: employees.length,
                     activeEmployees: employees.filter(e => e.status === 'active').length,
                     presentToday: report.present_today,
                     absentToday: report.absent_today,
                     attendancePercentage: employees.length > 0 ? Math.round((report.present_today / employees.length) * 100) : 0
-                });
+                };
+                setStats(newStats);
+                sessionStorage.setItem('cache_hr_dashboard_stats', JSON.stringify(newStats));
             } catch (error) {
                 console.error("Error fetching data", error);
             } finally {

@@ -101,12 +101,12 @@ const App = () => {
                         </ProtectedRoute>
                     } />
                     <Route path="/hr/salary" element={
-                        <ProtectedRoute allowedRoles={['hr_admin', 'super_admin']}>
+                        <ProtectedRoute allowedRoles={['super_admin']}>
                             <SalaryStructures />
                         </ProtectedRoute>
                     } />
                     <Route path="/hr/payroll" element={
-                        <ProtectedRoute allowedRoles={['hr_admin', 'super_admin']}>
+                        <ProtectedRoute allowedRoles={['super_admin']}>
                             <PayrollDashboard />
                         </ProtectedRoute>
                     } />
@@ -116,12 +116,12 @@ const App = () => {
                         </ProtectedRoute>
                     } />
                     <Route path="/employee/profile" element={
-                        <ProtectedRoute allowedRoles={['employee']}>
+                        <ProtectedRoute allowedRoles={['employee', 'hr_admin']}>
                             <EmployeeProfile />
                         </ProtectedRoute>
                     } />
                     <Route path="/employee/attendance" element={
-                        <ProtectedRoute allowedRoles={['employee']}>
+                        <ProtectedRoute allowedRoles={['employee', 'hr_admin']}>
                             <EmployeeAttendance />
                         </ProtectedRoute>
                     } />
@@ -131,12 +131,12 @@ const App = () => {
                         </ProtectedRoute>
                     } />
                     <Route path="/employee/salary" element={
-                        <ProtectedRoute allowedRoles={['employee']}>
+                        <ProtectedRoute allowedRoles={['employee', 'hr_admin']}>
                             <EmployeeSalary />
                         </ProtectedRoute>
                     } />
                     <Route path="/employee/payslips" element={
-                        <ProtectedRoute allowedRoles={['employee']}>
+                        <ProtectedRoute allowedRoles={['employee', 'hr_admin']}>
                             <EmployeePayslips />
                         </ProtectedRoute>
                     } />
@@ -160,7 +160,7 @@ const App = () => {
                         </ProtectedRoute>
                     } />
                     <Route path="/employee/qr-scan" element={
-                        <ProtectedRoute allowedRoles={['employee']}>
+                        <ProtectedRoute allowedRoles={['employee', 'hr_admin']}>
                             <QRScanner />
                         </ProtectedRoute>
                     } />

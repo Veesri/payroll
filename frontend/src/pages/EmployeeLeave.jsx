@@ -6,9 +6,18 @@ import Layout from '../components/Layout';
 
 const EmployeeLeave = () => {
     const { user } = useContext(AuthContext);
-    const [leaves, setLeaves] = useState([]);
-    const [leaveTypes, setLeaveTypes] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [leaves, setLeaves] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_leaves');
+        return cached ? JSON.parse(cached) : [];
+    });
+    const [leaveTypes, setLeaveTypes] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_leave_types');
+        return cached ? JSON.parse(cached) : [];
+    });
+    const [loading, setLoading] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_leaves');
+        return !cached;
+    });
     const [showModal, setShowModal] = useState(false);
     
     const [formData, setFormData] = useState({
@@ -29,6 +38,9 @@ const EmployeeLeave = () => {
             const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/leaves/?page=${page}`, { headers });
             setLeaves(res.data.leaves);
             setTotalPages(res.data.pages);
+            if (page === 1) {
+                sessionStorage.setItem('cache_employee_leaves', JSON.stringify(res.data.leaves));
+            }
         } catch (error) {
             console.error("Failed to fetch leaves", error);
         } finally {
@@ -40,6 +52,7 @@ const EmployeeLeave = () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/leaves/types`, { headers });
             setLeaveTypes(res.data);
+            sessionStorage.setItem('cache_employee_leave_types', JSON.stringify(res.data));
             if (res.data.length > 0) {
                 setFormData(f => ({...f, leave_type_id: res.data[0].id}));
             }

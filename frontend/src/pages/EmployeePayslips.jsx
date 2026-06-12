@@ -4,10 +4,15 @@ import Layout from '../components/Layout';
 import { FaDownload, FaFilePdf, FaEye } from 'react-icons/fa';
 
 const EmployeePayslips = () => {
-    const [payslips, setPayslips] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
     const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+    const [payslips, setPayslips] = useState(() => {
+        const cached = sessionStorage.getItem(`cache_employee_payslips_${new Date().getFullYear()}`);
+        return cached ? JSON.parse(cached) : [];
+    });
+    const [loading, setLoading] = useState(() => {
+        const cached = sessionStorage.getItem(`cache_employee_payslips_${new Date().getFullYear()}`);
+        return !cached;
+    });
 
     const token = localStorage.getItem('token');
     const headers = { Authorization: `Bearer ${token}` };
@@ -16,6 +21,7 @@ const EmployeePayslips = () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payslips/?year=${filterYear}`, { headers });
             setPayslips(res.data);
+            sessionStorage.setItem(`cache_employee_payslips_${filterYear}`, JSON.stringify(res.data));
         } catch (error) {
             console.error("Failed to fetch payslips", error);
         } finally {

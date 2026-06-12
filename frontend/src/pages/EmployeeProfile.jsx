@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import Layout from '../components/Layout';
+import { AuthContext } from '../context/AuthContext';
 import { FaUserAlt, FaPhoneAlt, FaEnvelope, FaIdCard, FaBuilding, FaUserCheck } from 'react-icons/fa';
 
 const EmployeeProfile = () => {
-    const [profile, setProfile] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { user } = useContext(AuthContext);
+    const [profile, setProfile] = useState(() => {
+        const cached = sessionStorage.getItem('cache_employee_profile');
+        return cached ? JSON.parse(cached) : user?.employee;
+    });
+    const [loading, setLoading] = useState(!profile);
     const [error, setError] = useState('');
 
     const token = localStorage.getItem('token');
@@ -14,14 +19,11 @@ const EmployeeProfile = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                // Get general user info (specifically the employee id)
                 const meRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/me`, { headers });
-                const employeeId = meRes.data.employee?.id;
-
-                if (employeeId) {
-                    // Fetch full employee details
-                    const empRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/employees/${employeeId}`, { headers });
-                    setProfile(empRes.data);
+                const empData = meRes.data.employee;
+                if (empData) {
+                    setProfile(empData);
+                    sessionStorage.setItem('cache_employee_profile', JSON.stringify(empData));
                 } else {
                     setError('No employee profile associated with this account.');
                 }

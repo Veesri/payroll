@@ -7,9 +7,19 @@ import Layout from '../components/Layout';
 
 const SuperAdminDashboard = () => {
     const { user } = useContext(AuthContext);
-    const [departments, setDepartments] = useState([]);
-    const [employees, setEmployees] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [departments, setDepartments] = useState(() => {
+        const cached = sessionStorage.getItem('cache_sa_departments');
+        return cached ? JSON.parse(cached) : [];
+    });
+    const [employees, setEmployees] = useState(() => {
+        const cached = sessionStorage.getItem('cache_sa_employees');
+        return cached ? JSON.parse(cached) : [];
+    });
+    const [loading, setLoading] = useState(() => {
+        const cachedDepts = sessionStorage.getItem('cache_sa_departments');
+        const cachedEmps = sessionStorage.getItem('cache_sa_employees');
+        return !(cachedDepts && cachedEmps);
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -25,6 +35,8 @@ const SuperAdminDashboard = () => {
                 
                 setDepartments(deptRes.data);
                 setEmployees(empRes.data.employees || []);
+                sessionStorage.setItem('cache_sa_departments', JSON.stringify(deptRes.data));
+                sessionStorage.setItem('cache_sa_employees', JSON.stringify(empRes.data.employees || []));
             } catch (error) {
                 console.error("Error fetching data", error);
             } finally {

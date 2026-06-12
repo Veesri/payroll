@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from flask_jwt_extended import jwt_required, get_jwt
 from werkzeug.security import generate_password_hash
 from models import db, Employee, User, Department, SalaryStructure
+from sqlalchemy.orm import joinedload
 
 employee_bp = Blueprint('employee', __name__)
 
@@ -26,7 +27,7 @@ def get_employees():
     search = request.args.get('search', '')
     department_id = request.args.get('department_id')
 
-    query = Employee.query
+    query = Employee.query.options(joinedload(Employee.department))
     
     if search:
         query = query.filter(db.or_(
