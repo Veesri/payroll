@@ -42,7 +42,6 @@ def create_app(config_class=Config):
     from routes.salary import salary_bp
     from routes.payroll import payroll_bp
     from routes.payslip import payslip_bp
-    from routes.dashboard import dashboard_bp
     from routes.email import email_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -53,7 +52,6 @@ def create_app(config_class=Config):
     app.register_blueprint(salary_bp, url_prefix='/api/salary')
     app.register_blueprint(payroll_bp, url_prefix='/api/payroll')
     app.register_blueprint(payslip_bp, url_prefix='/api/payslips')
-    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(email_bp, url_prefix='/api/email')
 
     @app.route('/health', methods=['GET'])
